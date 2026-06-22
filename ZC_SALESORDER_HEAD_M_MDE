@@ -55,7 +55,6 @@ annotate entity ZC_SALESORDER_HEAD_M with
          identification: [{ position: 70, label: 'Order Reason' }] }
   OrderReason;
 
-
   @UI.hidden: true
   Erdat;
   @UI.hidden: true
