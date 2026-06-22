@@ -1,1 +1,22 @@
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'ProjectionView for Sales order Header'
+@Metadata.ignorePropagatedAnnotations: true
+@Metadata.allowExtensions: true
+define root view entity ZC_SALESORDER_HEAD_M
+  provider contract transactional_query
+  as projection on ZR_SALESORDER_HEAD_M
+{
+  key SalesOrder,
+      DocumentDate,
+      OrderType,
+      SalesOrganization,
+      DistributionChannel,
+      Division,
+      OrderReason,
+      Erdat,
+      Erzet,
+      Ernam,
+      LastChangedAt,
+      _Item : redirected to composition child ZC_SALESORDER_ITEM_M
+}
 
