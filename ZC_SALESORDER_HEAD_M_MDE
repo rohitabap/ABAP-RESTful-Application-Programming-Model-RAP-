@@ -1,1 +1,66 @@
+@Metadata.layer: #CORE
+@UI.headerInfo: { typeName: 'Sales Order Manage',
+                  typeNamePlural: 'Sales Order Manage Application' }
+annotate entity ZC_SALESORDER_HEAD_M with
+{
+  @UI.facet: [{ id: 'SalesHeader',
+                purpose: #STANDARD,
+                position: 10,
+                label: 'Sales Order Header',
+                type: #IDENTIFICATION_REFERENCE },
+            { id: 'SalesItem',
+              purpose: #STANDARD,
+              position: 20,
+              label: 'Sales Order Item',
+              type: #LINEITEM_REFERENCE,
+              targetElement: '_Item' } ]
 
+  @UI: { lineItem: [{ position: 10, label: 'Sales Order Number' }],
+         selectionField: [{ position: 10 }],
+         identification: [{ position: 10, label: 'Sales Order Number' }] }
+  SalesOrder;
+
+  @UI: { lineItem: [{ position: 20, label: 'Document Date' }],
+         selectionField: [{ position: 20 }],
+         identification: [{ position: 20, label: 'Document Date' }] }
+  DocumentDate;
+
+  @UI: { lineItem: [{ position: 30, label: 'Order Type' }],
+         selectionField: [{ position: 30 }],
+         identification: [{ position: 30, label: 'Order Type' }] }
+  OrderType;
+
+  @UI: { lineItem: [{ position: 40, label: 'Sales Organization' }],
+         selectionField: [{ position: 40 }],
+         identification: [{ position: 40, label: 'Sales Organization' }] }
+  SalesOrganization;
+
+  @UI: { lineItem: [{ position: 50, label: 'Distribution Channel' }],
+         selectionField: [{ position: 50 }],
+         identification: [{ position: 50, label: 'Distribution Channel' }] }
+  DistributionChannel;
+
+  @UI: { lineItem: [{ position: 60, label: 'Division' }],
+         selectionField: [{ position: 60 }],
+         identification: [{ position: 60, label: 'Division' }] }
+  Division;
+
+  @UI: { lineItem: [{ position: 70, label: 'Sold To' }] }
+  SoldTo;
+
+  @UI: { lineItem: [{ position: 80, label: 'Ship To' }] }
+  ShipTo;
+
+  @UI: { lineItem: [{ position: 70, label: 'Order Reason' }],
+         identification: [{ position: 70, label: 'Order Reason' }] }
+  OrderReason;
+
+
+  @UI.hidden: true
+  Erdat;
+  @UI.hidden: true
+  Erzet;
+  @UI.hidden: true
+  Ernam;
+
+}
