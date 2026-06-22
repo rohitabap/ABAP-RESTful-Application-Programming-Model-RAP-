@@ -12,6 +12,8 @@ define root view entity ZR_SALESORDER_HEAD_M
       vtweg       as DistributionChannel,
       spart       as Division,
       augru       as OrderReason,
+      soldto      as SoldTo,
+      shipto      as ShipTo,
       erdat       as Erdat,
       erzet       as Erzet,
       @Semantics.user.localInstanceLastChangedBy: true
@@ -20,4 +22,3 @@ define root view entity ZR_SALESORDER_HEAD_M
       lastchanged as LastChangedAt,
       _Item
 }
-
