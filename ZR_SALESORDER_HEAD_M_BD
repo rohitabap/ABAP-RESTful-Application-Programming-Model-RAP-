@@ -1,1 +1,80 @@
+managed;
+strict ( 2 );
+with draft;
 
+define behavior for ZR_SALESORDER_HEAD_M alias Header
+implementation in class zbp_r_salesorder_head_m unique
+persistent table zms_sales_head
+draft table zdt_sales_head
+lock master
+total etag LastChangedAt
+authorization master ( instance )
+etag master LastChangedAt
+early numbering
+{
+  create ( authorization : global );
+  update;
+  delete;
+  field ( readonly ) SalesOrder, Ernam, LastChangedAt;
+  association _Item { create; with draft; }  //
+
+  validation validateDocumentDate on save { field DocumentDate; create; }
+
+  draft determine action Prepare
+  {
+    validation validateDocumentDate;
+  }
+
+  draft action Activate optimized;
+  //  draft determine action Prepare;
+  draft action Edit;
+  draft action Resume;
+  draft action Discard;
+
+  mapping for zms_sales_head //db table name
+    {
+
+      //CDS View field      //DB Table field name
+      SalesOrder          = vbeln;
+      DocumentDate        = audat;
+      OrderType           = auart;
+      SalesOrganization   = vkorg;
+      DistributionChannel = vtweg;
+      Division            = spart;
+      SoldTo              = soldto;
+      ShipTo              = shipto;
+      OrderReason         = augru;
+      Erdat               = erdat;
+      Erzet               = erzet;
+      Ernam               = ernam;
+      LastChangedAt       = lastchanged;
+    }
+}
+define behavior for ZI_SALESORDER_ITEM_M alias Item
+implementation in class zbp_i_salesorder_item_m unique
+persistent table zms_sales_item
+draft table zdt_sales_item
+lock dependent by _Head
+authorization dependent by _Head
+early numbering
+etag dependent by _Head
+{
+  update;
+  delete;
+  field ( readonly ) SalesOrder, Item;
+
+  association _Head { with draft; } //
+  mapping for zms_sales_item //db table name
+    {
+
+      //CDS View field      //DB Table field name
+      SalesOrder          = vbeln;
+      Item                = posnr;
+      Material            = matnr;
+      MaterialDescription = arktx;
+      Quantity            = kwmeng;
+      Unit                = vrkme;
+      Netpr               = netpr;
+      Currency            = waerk;
+    }
+}
