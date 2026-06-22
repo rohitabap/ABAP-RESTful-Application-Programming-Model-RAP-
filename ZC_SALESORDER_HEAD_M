@@ -13,10 +13,11 @@ define root view entity ZC_SALESORDER_HEAD_M
       DistributionChannel,
       Division,
       OrderReason,
+      SoldTo,
+      ShipTo,
       Erdat,
       Erzet,
       Ernam,
       LastChangedAt,
       _Item : redirected to composition child ZC_SALESORDER_ITEM_M
 }
-
