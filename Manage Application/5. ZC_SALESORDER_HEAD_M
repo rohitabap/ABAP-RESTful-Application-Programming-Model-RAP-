@@ -2,22 +2,43 @@
 @EndUserText.label: 'ProjectionView for Sales order Header'
 @Metadata.ignorePropagatedAnnotations: true
 @Metadata.allowExtensions: true
+@Search.searchable: true
 define root view entity ZC_SALESORDER_HEAD_M
   provider contract transactional_query
   as projection on ZR_SALESORDER_HEAD_M
 {
+      @Search.defaultSearchElement: true
+      @Search.fuzzinessThreshold: 0.8
   key SalesOrder,
       DocumentDate,
       OrderType,
       SalesOrganization,
       DistributionChannel,
       Division,
-      OrderReason,
+      @ObjectModel.text.element: [ 'StatusDesc' ]
+      OrderStatus,
+      _OverallStatus._Text.Text as StatusDesc : localized,
+      @ObjectModel.text.element: [ 'SoldToName' ]
+      @Search.defaultSearchElement: true
       SoldTo,
+      @Search.defaultSearchElement: true
+      @Search.fuzzinessThreshold: 0.8
+      _SoldToVH.CustomerName    as SoldToName,
+
+      @ObjectModel.text.element: [ 'ShipToName' ]
+      @Search.defaultSearchElement: true
       ShipTo,
+
+      @Search.defaultSearchElement: true
+      @Search.fuzzinessThreshold: 0.8
+      _ShipToVh.CustomerName    as ShipToName,
       Erdat,
       Erzet,
       Ernam,
       LastChangedAt,
+      @Search.defaultSearchElement: true
+      _SoldToVH,
+      @Search.defaultSearchElement: true
+      _ShipToVh,
       _Item : redirected to composition child ZC_SALESORDER_ITEM_M
 }
