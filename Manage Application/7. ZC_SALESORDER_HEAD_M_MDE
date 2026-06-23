@@ -1,8 +1,10 @@
 @Metadata.layer: #CORE
 @UI.headerInfo: { typeName: 'Sales Order Manage',
                   typeNamePlural: 'Sales Order Manage Application' }
+@Search.searchable: true
 annotate entity ZC_SALESORDER_HEAD_M with
 {
+
   @UI.facet: [{ id: 'SalesHeader',
                 purpose: #STANDARD,
                 position: 10,
@@ -14,46 +16,83 @@ annotate entity ZC_SALESORDER_HEAD_M with
               label: 'Sales Order Item',
               type: #LINEITEM_REFERENCE,
               targetElement: '_Item' } ]
-
+              
   @UI: { lineItem: [{ position: 10, label: 'Sales Order Number' }],
          selectionField: [{ position: 10 }],
-         identification: [{ position: 10, label: 'Sales Order Number' }] }
+         identification: [{ position: 10, label: 'Sales Order Number' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
+  @Search.defaultSearchElement: true
+  @Search.fuzzinessThreshold: 0.8
   SalesOrder;
-
+  
   @UI: { lineItem: [{ position: 20, label: 'Document Date' }],
          selectionField: [{ position: 20 }],
-         identification: [{ position: 20, label: 'Document Date' }] }
+         identification: [{ position: 20, label: 'Document Date' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
   DocumentDate;
 
   @UI: { lineItem: [{ position: 30, label: 'Order Type' }],
          selectionField: [{ position: 30 }],
-         identification: [{ position: 30, label: 'Order Type' }] }
+         identification: [{ position: 30, label: 'Order Type' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
   OrderType;
 
   @UI: { lineItem: [{ position: 40, label: 'Sales Organization' }],
          selectionField: [{ position: 40 }],
-         identification: [{ position: 40, label: 'Sales Organization' }] }
+         identification: [{ position: 40, label: 'Sales Organization' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
+  @Consumption.valueHelpDefinition: [
+    { entity: { name: 'ZI_SALES_ORDG_VH', element: 'Vkorg' },
+      additionalBinding: [{ localElement: 'DistributionChannel', element: 'Vtweg', usage: #FILTER_AND_RESULT },
+                          { localElement: 'Division', element: 'Spart', usage: #FILTER_AND_RESULT }] }]
+  @Search.defaultSearchElement: true
   SalesOrganization;
 
   @UI: { lineItem: [{ position: 50, label: 'Distribution Channel' }],
          selectionField: [{ position: 50 }],
-         identification: [{ position: 50, label: 'Distribution Channel' }] }
+         identification: [{ position: 50, label: 'Distribution Channel' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
+  @Consumption.valueHelpDefinition: [
+    { entity: { name: 'ZI_SALES_ORDG_VH', element: 'Vtweg' },
+      additionalBinding: [{ localElement: 'SalesOrganization', element: 'Vkorg', usage: #FILTER_AND_RESULT },
+                          { localElement: 'Division', element: 'Spart', usage: #FILTER_AND_RESULT }] }]
   DistributionChannel;
 
   @UI: { lineItem: [{ position: 60, label: 'Division' }],
          selectionField: [{ position: 60 }],
-         identification: [{ position: 60, label: 'Division' }] }
+         identification: [{ position: 60, label: 'Division' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
+  @Consumption.valueHelpDefinition: [
+    { entity: { name: 'ZI_SALES_ORDG_VH', element: 'Spart' },
+      additionalBinding: [{ localElement: 'SalesOrganization', element: 'Vkorg', usage: #FILTER_AND_RESULT },
+                          { localElement: 'DistributionChannel', element: 'Vtweg', usage: #FILTER_AND_RESULT }] }]
   Division;
 
-  @UI: { lineItem: [{ position: 70, label: 'Sold To' }] }
+  @UI: { lineItem: [{ position: 70, label: 'Sold To' }],
+         identification: [{ position: 70, label: 'Sold To' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
+  @Consumption.valueHelpDefinition: [
+    { entity: { name: 'ZI_CUSTOMER_DETAIL', element: 'CustomerID'} }]
+  @UI.textArrangement: #TEXT_LAST       
+  @Search.defaultSearchElement: true
   SoldTo;
-
-  @UI: { lineItem: [{ position: 80, label: 'Ship To' }] }
+    
+  @UI: { lineItem: [{ position: 80, label: 'Ship To' }],
+         identification: [{ position: 80, label: 'Ship To' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }] }
+  @UI.textArrangement: #TEXT_LAST
+  @Consumption.valueHelpDefinition: [
+    { entity: { name: 'ZI_CUSTOMER_DETAIL', element: 'CustomerID'} }]
+  @Search.defaultSearchElement: true
   ShipTo;
 
-  @UI: { lineItem: [{ position: 70, label: 'Order Reason' }],
-         identification: [{ position: 70, label: 'Order Reason' }] }
-  OrderReason;
+  @UI: { lineItem: [{ position: 90, label: 'Order Status' }],
+         identification: [{ position: 90, label: 'Order Status' }],
+         fieldGroup: [{ qualifier: 'HeaderField' }],
+         textArrangement: #TEXT_ONLY }
+  @Consumption.valueHelpDefinition: [
+    { entity: { name: '/DMO/I_Booking_Status_VH', element: 'BookingStatus' }}]
+  OrderStatus;
 
   @UI.hidden: true
   Erdat;
