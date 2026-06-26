@@ -1,0 +1,108 @@
+managed;
+strict ( 2 );
+with draft;
+
+define behavior for ZR_SALESORDER_HEAD_M alias Header
+implementation in class zbp_r_salesorder_head_m unique
+persistent table zms_sales_head
+draft table zdt_sales_head
+lock master
+total etag LastChangedAt
+authorization master ( instance )
+etag master LastChangedAt
+early numbering
+{
+  create ( authorization : global );
+  update;
+  delete;
+  field ( readonly ) SalesOrder, Ernam, LastChangedAt, TotalAmount;
+
+  association _Item { create; with draft; }
+
+  //Validate Document Date
+  validation validateDocumentDate on save { field DocumentDate; create; }
+
+  validation validateCustomer on save { field SoldTo; field ShipTo; create; }
+
+  //Internal action is used when we modify item entity price then automatically calculate head total amount
+  internal action reCalculateTotalAmt;
+
+  //While Creation SO, Sales order creation date and time will capture By RAP Framework
+  determination initDatetime on save { create; }
+
+  draft determine action Prepare
+  {
+    validation validateDocumentDate;
+    validation validateCustomer;
+  }
+
+  draft action Activate optimized;
+  draft action Edit;
+  draft action Resume;
+  draft action Discard;
+
+  mapping for zms_sales_head //db table name
+    {
+
+      //CDS View field      //DB Table field name
+      SalesOrder          = vbeln;
+      DocumentDate        = audat;
+      OrderType           = auart;
+      SalesOrganization   = vkorg;
+      DistributionChannel = vtweg;
+      Division            = spart;
+      SoldTo              = soldto;
+      ShipTo              = shipto;
+      OrderStatus         = status;
+      TotalAmount         = netwr;
+      Currency            = waers;
+      Discount            = discount;
+      Erdat               = erdat;
+      Erzet               = erzet;
+      Ernam               = ernam;
+      LastChangedAt       = lastchanged;
+    }
+}
+define behavior for ZI_SALESORDER_ITEM_M alias Item
+implementation in class zbp_i_salesorder_item_m unique
+persistent table zms_sales_item
+draft table zdt_sales_item
+lock dependent by _Head
+authorization dependent by _Head
+early numbering
+etag dependent by _Head
+{
+  update;
+  delete;
+  field ( readonly ) SalesOrder, Item, Value;
+  association _Head { with draft; }
+
+  //Deter. Value = Per Item rate * Quantity
+  determination setTotalValue on modify { field Rate, Quantity; }
+
+  //Deter. TotalAmount = Sum of all Sales item Value
+  determination setTotalAmount on modify { field Rate, Quantity; create; }
+
+  //side effect used refresh UI screen to get the latest value
+  side effects
+  {
+    field Rate affects field Value, field _Head.TotalAmount;
+    field Quantity affects field Value, field _Head.TotalAmount;
+  }
+
+  mapping for zms_sales_item //db table name
+    {
+
+      //CDS View field      //DB Table field name
+      SalesOrder          = vbeln;
+      Item                = posnr;
+      Material            = matnr;
+      MaterialDescription = arktx;
+      CommentText         = comment_f;
+      Quantity            = kwmeng;
+      Unit                = vrkme;
+      Rate                = netpr;
+      Value               = netwr;
+      Currency            = waerk;
+    }
+}

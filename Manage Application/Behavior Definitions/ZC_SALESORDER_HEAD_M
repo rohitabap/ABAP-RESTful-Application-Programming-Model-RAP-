@@ -1,0 +1,29 @@
+projection;
+strict ( 2 );
+use draft;
+use side effects;
+
+define behavior for ZC_SALESORDER_HEAD_M alias Header
+use etag
+{
+
+  use create;
+  use update;
+  use delete;
+  use association _Item { create; with draft; } //
+
+  use action Edit;
+  use action Activate;
+  use action Discard;
+  use action Prepare;
+  use action Resume;
+}
+
+define behavior for ZC_SALESORDER_ITEM_M alias Item
+use etag
+{
+  use update;
+  use delete;
+
+  use association _Head{ with draft; }  //
+}
