@@ -1,0 +1,20 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Customer Details'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.dataCategory: #VALUE_HELP
+@Search.searchable: true
+define view entity ZI_CUSTOMER_DETAIL
+  as select from /DMO/I_Customer as Customer
+{
+      @Search.defaultSearchElement: true
+  key Customer.CustomerID,
+      //@Semantics.text: true     
+      //concat_with_space( Customer.FirstName, Customer.LastName, 1 ) as CustomerName, 
+      @Search.defaultSearchElement: true
+      @Search.fuzzinessThreshold: 0.8
+      Customer.FirstName as CustomerName,  
+      @Search.fuzzinessThreshold: 0.8 
+      @Search.defaultSearchElement: true
+      Customer.LastName
+}

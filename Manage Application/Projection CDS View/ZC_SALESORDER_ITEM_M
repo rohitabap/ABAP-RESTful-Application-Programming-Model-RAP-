@@ -1,0 +1,23 @@
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'ProjectionView for Sales order Item'
+@Metadata.ignorePropagatedAnnotations: true
+@Metadata.allowExtensions: true
+define view entity ZC_SALESORDER_ITEM_M
+  as projection on ZI_SALESORDER_ITEM_M
+{
+  key SalesOrder,
+  key Item,
+      Material,
+      MaterialDescription,
+      CommentText,
+      @Semantics.quantity.unitOfMeasure: 'Unit'
+      Quantity,
+      Unit,
+      @Semantics.amount.currencyCode: 'Currency'
+      Rate,
+      @Semantics.amount.currencyCode: 'Currency'
+      Value,
+      Currency,
+      _Head : redirected to parent ZC_SALESORDER_HEAD_M,
+      _Product
+}

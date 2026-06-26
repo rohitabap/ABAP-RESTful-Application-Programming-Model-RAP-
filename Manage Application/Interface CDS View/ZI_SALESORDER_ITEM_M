@@ -1,0 +1,25 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Interface View for Sales order Item'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity ZI_SALESORDER_ITEM_M
+  as select from zms_sales_item as Item
+  association     to parent ZR_SALESORDER_HEAD_M as _Head    on $projection.SalesOrder = _Head.SalesOrder
+  association [1] to ZI_PRODUCT_DETAIL_VH        as _Product on $projection.Material = _Product.ProductId
+{
+  key vbeln     as SalesOrder,
+  key posnr     as Item,
+      matnr     as Material,
+      arktx     as MaterialDescription,
+      comment_f as CommentText,
+      @Semantics.quantity.unitOfMeasure: 'Unit'
+      kwmeng    as Quantity,
+      vrkme     as Unit,
+      @Semantics.amount.currencyCode: 'Currency'
+      netpr     as Rate,
+      @Semantics.amount.currencyCode: 'Currency'
+      netwr     as Value,
+      waerk     as Currency,
+      _Head,
+      _Product
+}

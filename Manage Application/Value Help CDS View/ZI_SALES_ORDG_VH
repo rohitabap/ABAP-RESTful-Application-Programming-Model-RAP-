@@ -1,0 +1,16 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Sales Org Value Help'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.dataCategory: #VALUE_HELP
+@Search.searchable: true
+define view entity ZI_SALES_ORDG_VH
+  as select from ztvta
+{
+      @Search.defaultSearchElement: true
+  key vkorg as Vkorg,
+      @Search.defaultSearchElement: true
+  key vtweg as Vtweg,
+      @Search.defaultSearchElement: true
+  key spart as Spart
+}
