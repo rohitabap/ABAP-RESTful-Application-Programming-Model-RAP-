@@ -1,0 +1,12 @@
+@EndUserText.label : 'Product Detail'
+@AbapCatalog.enhancement.category : #EXTENSIBLE_CHARACTER_NUMERIC
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #ALLOWED
+define table zproduct_master {
+
+  key client     : abap.clnt not null;
+  key product_id : matnr not null;
+  text           : maktx;
+
+}

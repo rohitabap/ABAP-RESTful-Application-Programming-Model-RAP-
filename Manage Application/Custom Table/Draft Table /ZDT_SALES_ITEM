@@ -1,0 +1,24 @@
+@EndUserText.label : 'Draft table for entity ZI_SALESORDER_ITEM_M'
+@AbapCatalog.enhancement.category : #EXTENSIBLE_ANY
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zdt_sales_item {
+
+  key mandt           : mandt not null;
+  key salesorder      : vbeln_va not null;
+  key item            : posnr_va not null;
+  material            : matnr;
+  materialdescription : arktx;
+  commenttext         : arktx;
+  @Semantics.quantity.unitOfMeasure : 'zdt_sales_item.unit'
+  quantity            : abap.quan(15,3);
+  unit                : vrkme;
+  @Semantics.amount.currencyCode : 'zdt_sales_item.currency'
+  rate                : abap.curr(15,2);
+  @Semantics.amount.currencyCode : 'zdt_sales_item.currency'
+  value               : abap.curr(15,2);
+  currency            : waerk;
+  "%admin"            : include sych_bdl_draft_admin_inc;
+
+}

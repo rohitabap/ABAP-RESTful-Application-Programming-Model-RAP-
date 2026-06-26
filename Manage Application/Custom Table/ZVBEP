@@ -1,0 +1,19 @@
+@EndUserText.label : 'Sales Document: Schedule Line Data'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zvbep {
+
+  key client : abap.clnt not null;
+  key vbeln  : vbeln_va not null;
+  key posnr  : posnr_va not null;
+  key etenr  : etenr not null;
+  @EndUserText.label : 'Schedule line category'
+  ettyp      : abap.char(2);
+  @EndUserText.label : 'Schedule line date'
+  edatu      : abap.dats;
+  @EndUserText.label : 'Arrival time'
+  ezeit      : abap.tims;
+
+}

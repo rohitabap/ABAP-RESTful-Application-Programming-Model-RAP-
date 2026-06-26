@@ -1,0 +1,28 @@
+@EndUserText.label : 'Draft table for entity ZR_SALESORDER_HEAD_M'
+@AbapCatalog.enhancement.category : #EXTENSIBLE_ANY
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zdt_sales_head {
+
+  key mandt           : mandt not null;
+  key salesorder      : vbeln_va not null;
+  documentdate        : abap.dats;
+  ordertype           : auart;
+  salesorganization   : vkorg;
+  distributionchannel : vtweg;
+  division            : spart;
+  orderstatus         : /dmo/overall_status;
+  soldto              : /dmo/customer_id;
+  shipto              : /dmo/customer_id;
+  @Semantics.amount.currencyCode : 'zdt_sales_head.currency'
+  totalamount         : abap.curr(15,2);
+  currency            : waers;
+  discount            : abap.int1;
+  erdat               : erdat;
+  erzet               : abap.tims;
+  ernam               : ernam;
+  lastchangedat       : last_changed;
+  "%admin"            : include sych_bdl_draft_admin_inc;
+
+}

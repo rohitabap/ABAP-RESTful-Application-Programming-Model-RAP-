@@ -1,0 +1,13 @@
+@EndUserText.label : 'Organizational Unit: Sales Area'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table ztvta {
+
+  key client : abap.clnt not null;
+  key vkorg  : vkorg not null;
+  key vtweg  : vtweg not null;
+  key spart  : spart not null;
+
+}
