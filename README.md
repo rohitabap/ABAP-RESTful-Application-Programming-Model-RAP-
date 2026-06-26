@@ -1,2 +1,11 @@
 # ABAP-RESTful-Application-Programming-Model-RAP-
-Create ABAP RESTFul Application with Manage and Unmanage Application
+Step 1: Create Custom Table
+Step 2: Create Value Help CDS View
+Step 3: Create Interface CDS View
+Step 4: Create Projection CDS View
+Step 5: Create Metadata Extension
+Step 6: Create Behavior Definitions
+Step 7: Create Behavior Implementation
+Step 8: Create Service Definition 
+Step 9: Create Service Binding
+Step 10: Preview the application
