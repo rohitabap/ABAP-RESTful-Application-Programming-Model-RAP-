@@ -1,0 +1,30 @@
+@EndUserText.label : 'Sales Order Header'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zms_sales_head {
+
+  key client  : abap.clnt not null;
+  key vbeln   : vbeln_va not null;
+  @EndUserText.label : 'Order Date'
+  audat       : abap.dats;
+  auart       : auart;
+  vkorg       : vkorg;
+  vtweg       : vtweg;
+  spart       : spart;
+  vkbur       : vkbur;
+  status      : /dmo/overall_status;
+  soldto      : /dmo/customer_id;
+  shipto      : /dmo/customer_id;
+  @Semantics.amount.currencyCode : 'zms_sales_head.waers'
+  netwr       : abap.curr(15,2);
+  waers       : waers;
+  discount    : abap.int1;
+  erdat       : erdat;
+  @EndUserText.label : 'Current System Time'
+  erzet       : abap.tims;
+  ernam       : ernam;
+  lastchanged : last_changed;
+
+}
