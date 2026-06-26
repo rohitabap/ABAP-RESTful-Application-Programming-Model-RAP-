@@ -1,0 +1,5 @@
+@EndUserText.label: 'Sales Order Application V4 Service'
+define service ZUI_SALES_APPLICATION_O4 {
+  expose ZC_SALESORDER_HEAD_M as Header;
+  expose ZC_SALESORDER_ITEM_M as Item;
+}
