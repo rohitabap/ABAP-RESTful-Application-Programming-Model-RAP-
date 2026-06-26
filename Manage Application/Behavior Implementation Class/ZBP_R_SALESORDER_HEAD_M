@@ -1,0 +1,5 @@
+CLASS zbp_r_salesorder_head_m DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zr_salesorder_head_m.
+ENDCLASS.
+
+CLASS zbp_r_salesorder_head_m IMPLEMENTATION.
+ENDCLASS.

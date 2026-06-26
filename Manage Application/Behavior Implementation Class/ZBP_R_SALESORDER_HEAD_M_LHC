@@ -1,0 +1,273 @@
+CLASS lhc_Header DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR Header RESULT result.
+
+    METHODS get_global_authorizations FOR GLOBAL AUTHORIZATION
+      IMPORTING REQUEST requested_authorizations FOR Header RESULT result.
+    METHODS validateDocumentDate FOR VALIDATE ON SAVE
+      IMPORTING keys FOR Header~validateDocumentDate.
+    METHODS initDatetime FOR DETERMINE ON SAVE
+      IMPORTING keys FOR Header~initDatetime.
+    METHODS reCalculateTotalAmt FOR MODIFY
+      IMPORTING keys FOR ACTION Header~reCalculateTotalAmt.
+    METHODS validateCustomer FOR VALIDATE ON SAVE
+      IMPORTING keys FOR Header~validateCustomer.
+    METHODS earlynumbering_create FOR NUMBERING
+      IMPORTING entities FOR CREATE Header.
+
+    METHODS earlynumbering_cba_Item FOR NUMBERING
+      IMPORTING entities FOR CREATE Header\_Item.
+
+ENDCLASS.
+
+CLASS lhc_Header IMPLEMENTATION.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD get_global_authorizations.
+  ENDMETHOD.
+
+  METHOD earlynumbering_create.
+
+    "Keep only the entities that do not have the key
+    DATA(lt_entities) = entities.
+
+    LOOP AT lt_entities INTO DATA(ls_entities)
+                        GROUP BY ls_entities-SalesOrder.  "group by used for Unique Sales Order iteration
+
+      IF ls_entities-SalesOrder IS INITIAL.
+
+        "&... get the Unique Number
+        TRY.
+            cl_numberrange_runtime=>number_get(
+              EXPORTING
+                nr_range_nr       = '01'
+                object            = '/DMO/TRAVL'            "/DMO/TRAVL
+              IMPORTING
+                number            = DATA(lv_number)
+                returncode        = DATA(lv_returncode)
+                returned_quantity = DATA(lv_retirn_qty) ).
+          CATCH cx_nr_object_not_found INTO DATA(lx_nr_object_not_found).
+          CATCH cx_number_ranges INTO DATA(lx_number_ranges).
+        ENDTRY.
+
+        IF lv_number IS NOT INITIAL.
+
+          DATA(lv_order) = |{ lv_number ALPHA = OUT }|.
+          lv_order = CONV vbeln_va( |{ lv_order ALPHA = IN }| ).
+
+          "Mapped  Sales order Number Header Entity
+          APPEND VALUE #( %cid        = ls_entities-%cid
+                          %is_draft   = ls_entities-%is_draft "If draft functionality is enable then add this
+                           Salesorder = lv_order ) TO mapped-header.
+
+        ELSE.
+
+          APPEND VALUE #( %cid      = ls_entities-%cid
+                          %is_draft = ls_entities-%is_draft    "If draft functionality is enable then add this
+                          %key      = ls_entities-%key  ) TO failed-header.
+
+          APPEND VALUE #( %cid      = ls_entities-%cid
+                          %key      = ls_entities-%key
+                          %is_draft = ls_entities-%is_draft  "If draft functionality is enable then add this
+                          %msg      = COND #( WHEN lx_nr_object_not_found IS NOT INITIAL
+                                              THEN lx_nr_object_not_found
+                                              WHEN lx_number_ranges IS NOT INITIAL
+                                              THEN lx_number_ranges )  ) TO reported-header.
+
+          EXIT.
+        ENDIF.
+        CLEAR: lv_number, lv_returncode, lv_retirn_qty, lv_order.
+
+      ELSE.
+
+        "Mapped  Sales order Number Header Entity
+        APPEND VALUE #( %cid        = ls_entities-%cid
+                        %is_draft   = ls_entities-%is_draft "If draft functionality is enable then add this
+                         Salesorder = ls_entities-SalesOrder ) TO mapped-header.
+
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD earlynumbering_cba_Item.
+
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header BY \_Item
+    FROM CORRESPONDING #( entities )
+    LINK DATA(lt_item).
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<fs_entities>) GROUP BY <fs_entities>-SalesOrder.
+
+      DATA(lv_line) = COND #( WHEN lt_item IS INITIAL
+                              THEN 0
+                              ELSE lines( lt_item ) ).
+      LOOP AT <fs_entities>-%target ASSIGNING FIELD-SYMBOL(<fs_target>).
+
+        IF <fs_target>-Item IS INITIAL.
+          "Mapped  Sales order Item Number Entity (Before UI)
+          APPEND VALUE #( %cid      = <fs_target>-%cid
+                          %key      = VALUE #( SalesOrder = <fs_entities>-%key-SalesOrder
+                                               Item       = COND #( WHEN lv_line EQ 0
+                                                                    THEN 10
+                                                                    ELSE ( lv_line + 1 ) * 10 ) )
+                          %is_draft = <fs_target>-%is_draft ) TO mapped-item.
+        ELSE.
+
+           "Mapped Sales order Item Entity (After U - While Saving in DB)
+           APPEND VALUE #( %cid      = <fs_target>-%cid
+                           %key      = value #( SalesOrder = <fs_target>-SalesOrder
+                                                Item       = <fs_target>-Item )
+                           %is_draft = <fs_target>-%is_draft  )  to mapped-item.
+
+        ENDIF.
+      ENDLOOP.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateDocumentDate.
+
+    "Read Sales order Header Entity
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header FIELDS ( DocumentDate )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_result).
+
+    LOOP AT lt_result INTO DATA(ls_result).
+
+    APPEND VALUE #(  %tky          = ls_result-%tky
+                       %state_area = 'VALIDATE_DATES' ) TO reported-header.
+
+      IF ls_result-DocumentDate LT cl_abap_context_info=>get_system_date( ).  "Validate if date not matching
+
+        "Fill the FAILED structure
+        APPEND VALUE #( %tky = ls_result-%tky ) TO failed-header.
+        "Fill the REPORTED structure for UI messages
+        APPEND VALUE #( %tky        = ls_result-%tky
+                        %state_area = 'VALIDATE_DATES'
+                        %msg        = new_message_with_text( severity = if_abap_behv_message=>severity-error
+                                                             text     = 'Document Date should not be past date' )
+                        %element-DocumentDate = if_abap_behv=>mk-on ) TO reported-header.
+
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD initDatetime.
+
+    "While Creation SO, Sales order Creation date and time will capture by RAP framework
+    MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    UPDATE FIELDS ( Erdat Erzet )
+    WITH VALUE #(  FOR LS_KEYS IN keys
+                ( %tky = ls_keys-%tky
+                  Erdat = cl_abap_context_info=>get_system_date( )
+                  Erzet = cl_abap_context_info=>get_system_time( )  ) ).
+
+  ENDMETHOD.
+
+  METHOD reCalculateTotalAmt.
+
+    "Read  Sales Order Header Data
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    FIELDS ( SalesOrder TotalAmount )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_head).
+
+    "Read all Associated Sales order line item and Quantity and Value
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header BY \_Item
+    FIELDS ( SalesOrder Item Quantity Value )
+    WITH CORRESPONDING #( keys )
+    LINK DATA(lt_link_item)   "When you want to read all line item then used Link Data
+    RESULT DATA(lt_item).
+
+    IF lt_item[] IS NOT INITIAL.
+
+      LOOP AT lt_head ASSIGNING FIELD-SYMBOL(<fs_head>).
+        <fs_head>-TotalAmount = REDUCE #( INIT lv_init TYPE zr_salesorder_head_m-TotalAmount
+                                          FOR ls_item IN lt_item USING KEY entity
+                                          WHERE ( SalesOrder = <fs_head>-SalesOrder  )
+                                          NEXT lv_init = lv_init + ls_item-Value ).
+      ENDLOOP.
+
+      "Write back the modified total Amount of Sales Order Header Entity
+      MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+      ENTITY Header
+      UPDATE FIELDS ( TotalAmount )
+      WITH VALUE #( FOR ls_head IN lt_head
+                  ( %tky = ls_head-%tky
+                    TotalAmount = REDUCE #( INIT lv_init TYPE zr_salesorder_head_m-TotalAmount
+                                            FOR ls_item IN lt_item USING KEY entity
+                                            WHERE ( SalesOrder = ls_head-SalesOrder  )
+                                            NEXT lv_init = lv_init + ls_item-Value ) ) ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD validateCustomer.
+
+    "Read Sales order Header (SoldTo, ShipTo) Detail
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    FIELDS ( SoldTo ShipTo )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_customer).
+    IF lt_customer[] IS NOT INITIAL.
+
+      SELECT FROM /dmo/customer
+          FIELDS customer_id
+          FOR ALL ENTRIES IN @lt_customer
+          WHERE customer_id EQ @lt_customer-SoldTo
+              OR customer_id EQ @lt_customer-ShipTo
+          INTO TABLE @DATA(lt_validcustomer).
+
+      LOOP AT lt_customer INTO DATA(ls_customer).
+
+        APPEND VALUE #( %tky        = ls_customer-%tky
+                        %state_area = 'VALIDATE_CUSTOMER' ) TO reported-header.
+
+        "Check Sold to Customer is validate or not
+        IF NOT line_exists( lt_validcustomer[ customer_id = ls_customer-SoldTo ] ).
+
+          APPEND VALUE #( %tky = ls_customer-%tky ) TO failed-header.
+
+          APPEND VALUE #(  %tky = ls_customer-%tky
+                           %state_area = 'VALIDATE_CUSTOMER'
+                           %msg     = new_message_with_text(
+                                        severity = if_abap_behv_message=>severity-error
+                                        text     = |Sold to Customer is invalid: { ls_customer-SoldTo }| )
+                           %element-soldto = if_abap_behv=>mk-on )  TO reported-header.
+
+        ENDIF.
+
+        IF NOT line_exists( lt_validcustomer[ customer_id = ls_customer-ShipTo ] ).
+
+          APPEND VALUE #( %tky = ls_customer-%tky ) TO failed-header.
+
+          APPEND VALUE #(  %tky = ls_customer-%tky
+                           %state_area = 'VALIDATE_CUSTOMER'
+                           %msg     = new_message_with_text(
+                                        severity = if_abap_behv_message=>severity-error
+                                        text     = |Ship to Customer is invalid: { ls_customer-ShipTo }| )
+                           %element-shipto = if_abap_behv=>mk-on )  TO reported-header.
+
+
+        ENDIF.
+
+      ENDLOOP.
+
+    ENDIF.
+  ENDMETHOD.
+
+ENDCLASS.

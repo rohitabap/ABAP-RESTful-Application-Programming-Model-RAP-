@@ -1,0 +1,66 @@
+CLASS lhc_item DEFINITION INHERITING FROM cl_abap_behavior_handler.
+
+  PRIVATE SECTION.
+
+    METHODS setTotalValue FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR Item~setTotalValue.
+    METHODS setTotalAmount FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR Item~setTotalAmount.
+
+ENDCLASS.
+
+CLASS lhc_item IMPLEMENTATION.
+
+  METHOD setTotalValue.
+
+    "Read Line Item detail
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Item
+    FIELDS ( Salesorder Item Rate )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_itemrate) .
+
+    IF lt_itemrate IS NOT INITIAL.
+
+      "Write Sales Order Line item = Quantity * Per Unit Price
+      MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+      ENTITY Item
+      UPDATE FIELDS ( Value )
+      WITH VALUE #( FOR ls_rate IN lt_itemrate
+                  ( %tky = ls_rate-%tky
+                    Value = COND #( WHEN ls_rate-Quantity NE 0 AND ls_rate-Rate NE 0
+                                    THEN ls_rate-Quantity * ls_rate-Rate
+                                    ELSE 0 ) ) ).
+
+
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD setTotalAmount.
+
+    "Read Associated Sales Order Line item Detail
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    FIELDS ( SalesOrder )
+    WITH CORRESPONDING #( keys )"
+    RESULT DATA(lt_head).
+
+    IF lt_head[] IS NOT INITIAL.
+
+      " Trigger Re-Calculation on Sales Order Header Root Node
+      MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+      ENTITY Header
+      EXECUTE reCalculateTotalAmt
+      FROM CORRESPONDING #( lt_head ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+*"* use this source file for the definition and implementation of
+*"* local helper classes, interface definitions and type
+*"* declarations
