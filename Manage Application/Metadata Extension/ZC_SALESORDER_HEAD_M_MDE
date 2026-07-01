@@ -7,7 +7,7 @@ annotate entity ZC_SALESORDER_HEAD_M with
 
   @UI.facet: [{ id: 'SalesHeader',
                 purpose: #STANDARD,
-                position: 10,
+                position: 10,               
                 label: 'Sales Order Header',
                 type: #IDENTIFICATION_REFERENCE },
             { id: 'SalesItem',
@@ -17,9 +17,15 @@ annotate entity ZC_SALESORDER_HEAD_M with
               type: #LINEITEM_REFERENCE,
               targetElement: '_Item' } ]
               
-  @UI: { lineItem: [{ position: 10, label: 'Sales Order Number' }],
+  @UI: { lineItem: [{ position: 10, label: 'Sales Order Number' },
+                    { type: #FOR_ACTION, dataAction: 'deductDiscount', label: 'Deduct Discount' },
+                    { type: #FOR_ACTION, dataAction: 'bookedOrder', label: 'Booked Order' },
+                    { type: #FOR_ACTION, dataAction: 'canceledOrder', label: 'Canceled Order' }],
          selectionField: [{ position: 10 }],
-         identification: [{ position: 10, label: 'Sales Order Number' }],
+         identification: [{ position: 10, label: 'Sales Order Number' },
+                          { type: #FOR_ACTION, dataAction: 'deductDiscount', label: 'Deduct Discount' },
+                          { type: #FOR_ACTION, dataAction: 'bookedOrder', label: 'Booked Order' },
+                          { type: #FOR_ACTION, dataAction: 'canceledOrder', label: 'Canceled Order' }],
          fieldGroup: [{ qualifier: 'HeaderField' }] }
   @Search.defaultSearchElement: true
   @Search.fuzzinessThreshold: 0.8
@@ -102,7 +108,7 @@ annotate entity ZC_SALESORDER_HEAD_M with
   @UI: { lineItem: [{ position: 110, label: 'Currency' }],
          identification: [{ position: 110, label: 'Currency' }] }
   @Consumption.valueHelpDefinition: [
-    { entity: { name: 'I_UnitOfMeasureStdVH', element: 'UnitOfMeasure' } ,
+    { entity: { name: 'I_Currency', element: 'Currency' } ,
       useForValidation: true }
     ]
   Currency;

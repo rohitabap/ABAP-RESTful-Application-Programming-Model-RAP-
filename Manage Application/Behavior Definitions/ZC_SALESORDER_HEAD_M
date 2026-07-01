@@ -11,6 +11,9 @@ use etag
   use update;
   use delete;
   use association _Item { create; with draft; } //
+  use action deductDiscount;
+  use action bookedOrder;
+  use action canceledOrder;
 
   use action Edit;
   use action Activate;

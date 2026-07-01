@@ -1,6 +1,13 @@
 CLASS lhc_Header DEFINITION INHERITING FROM cl_abap_behavior_handler.
   PRIVATE SECTION.
 
+    CONSTANTS:
+      BEGIN OF gc_status,
+        New      TYPE c LENGTH 1 VALUE 'N', "New
+        Booked   TYPE c LENGTH 1 VALUE 'B', "Booked
+        Canceled TYPE c LENGTH 1 VALUE 'X', "Canceled
+      END OF gc_status.
+
     METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
       IMPORTING keys REQUEST requested_authorizations FOR Header RESULT result.
 
@@ -14,6 +21,15 @@ CLASS lhc_Header DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR ACTION Header~reCalculateTotalAmt.
     METHODS validateCustomer FOR VALIDATE ON SAVE
       IMPORTING keys FOR Header~validateCustomer.
+    METHODS deductDiscount FOR MODIFY
+      IMPORTING keys FOR ACTION Header~deductDiscount RESULT result.
+    METHODS bookedOrder FOR MODIFY
+      IMPORTING keys FOR ACTION Header~bookedOrder RESULT result.
+
+    METHODS canceledOrder FOR MODIFY
+      IMPORTING keys FOR ACTION Header~canceledOrder RESULT result.
+    METHODS setOrderStatus FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR Header~setOrderStatus.
     METHODS earlynumbering_create FOR NUMBERING
       IMPORTING entities FOR CREATE Header.
 
@@ -179,7 +195,7 @@ CLASS lhc_Header IMPLEMENTATION.
     "Read  Sales Order Header Data
     READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
     ENTITY Header
-    FIELDS ( SalesOrder TotalAmount )
+    FIELDS ( SalesOrder TotalAmount Discount )
     WITH CORRESPONDING #( keys )
     RESULT DATA(lt_head).
 
@@ -194,10 +210,16 @@ CLASS lhc_Header IMPLEMENTATION.
     IF lt_item[] IS NOT INITIAL.
 
       LOOP AT lt_head ASSIGNING FIELD-SYMBOL(<fs_head>).
+
         <fs_head>-TotalAmount = REDUCE #( INIT lv_init TYPE zr_salesorder_head_m-TotalAmount
                                           FOR ls_item IN lt_item USING KEY entity
                                           WHERE ( SalesOrder = <fs_head>-SalesOrder  )
                                           NEXT lv_init = lv_init + ls_item-Value ).
+
+        <fs_head>-TotalAmount = COND #( WHEN <fs_head>-Discount IS INITIAL
+                                        THEN <fs_head>-TotalAmount
+                                        ELSE <fs_head>-TotalAmount - ( ( <fs_head>-TotalAmount * <fs_head>-Discount ) / 100 ) ) .
+
       ENDLOOP.
 
       "Write back the modified total Amount of Sales Order Header Entity
@@ -205,11 +227,8 @@ CLASS lhc_Header IMPLEMENTATION.
       ENTITY Header
       UPDATE FIELDS ( TotalAmount )
       WITH VALUE #( FOR ls_head IN lt_head
-                  ( %tky = ls_head-%tky
-                    TotalAmount = REDUCE #( INIT lv_init TYPE zr_salesorder_head_m-TotalAmount
-                                            FOR ls_item IN lt_item USING KEY entity
-                                            WHERE ( SalesOrder = ls_head-SalesOrder  )
-                                            NEXT lv_init = lv_init + ls_item-Value ) ) ).
+                  ( %tky        = ls_head-%tky
+                    TotalAmount = ls_head-TotalAmount ) ).
 
     ENDIF.
 
@@ -244,9 +263,8 @@ CLASS lhc_Header IMPLEMENTATION.
 
           APPEND VALUE #(  %tky = ls_customer-%tky
                            %state_area = 'VALIDATE_CUSTOMER'
-                           %msg     = new_message_with_text(
-                                        severity = if_abap_behv_message=>severity-error
-                                        text     = |Sold to Customer is invalid: { ls_customer-SoldTo }| )
+                           %msg     = new_message_with_text( severity = if_abap_behv_message=>severity-error
+                                                             text     = |Sold to Customer is invalid: { ls_customer-SoldTo }| )
                            %element-soldto = if_abap_behv=>mk-on )  TO reported-header.
 
         ENDIF.
@@ -257,9 +275,8 @@ CLASS lhc_Header IMPLEMENTATION.
 
           APPEND VALUE #(  %tky = ls_customer-%tky
                            %state_area = 'VALIDATE_CUSTOMER'
-                           %msg     = new_message_with_text(
-                                        severity = if_abap_behv_message=>severity-error
-                                        text     = |Ship to Customer is invalid: { ls_customer-ShipTo }| )
+                           %msg     = new_message_with_text( severity = if_abap_behv_message=>severity-error
+                                                             text     = |Ship to Customer is invalid: { ls_customer-ShipTo }| )
                            %element-shipto = if_abap_behv=>mk-on )  TO reported-header.
 
 
@@ -268,6 +285,146 @@ CLASS lhc_Header IMPLEMENTATION.
       ENDLOOP.
 
     ENDIF.
+  ENDMETHOD.
+
+  METHOD deductDiscount.
+
+    DATA(lt_keys_discount) = keys.
+    LOOP AT lt_keys_discount ASSIGNING FIELD-SYMBOL(<fs_key>) WHERE %param-Discount IS INITIAL
+                                                                OR  %param-Discount GE 100
+                                                                OR %param-Discount LE 0.
+
+      APPEND VALUE #( %tky = <fs_key>-%tky  ) TO failed-header.
+
+      APPEND VALUE #( %tky = <fs_key>-%tky
+                      %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error
+                                                    text     = 'Invalid discount value' )
+                      %element-discount = <fs_key>-%param-Discount
+                      %op-%action-deductDiscount = if_abap_behv=>mk-on ) TO reported-header.
+
+    ENDLOOP.
+
+    CHECK failed-header IS INITIAL.
+
+    "Read Header Entity with Total amount booking
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    FIELDS ( SalesOrder TotalAmount )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_head).
+    IF lt_head[] IS NOT INITIAL.
+
+      "Read Sales order Item Entity for re-calculating the Amount
+      "Read all Associated Sales order line item and Quantity and Value
+      READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+      ENTITY Header BY \_Item
+      FIELDS ( SalesOrder Item Quantity Value )
+      WITH CORRESPONDING #( keys )
+      LINK DATA(lt_link_item)   "When you want to read all line item then used Link Data
+      RESULT DATA(lt_item).
+
+      LOOP AT lt_head ASSIGNING FIELD-SYMBOL(<fs_head>).
+
+        <fs_head>-TotalAmount = REDUCE #( INIT lv_init TYPE zr_salesorder_head_m-TotalAmount
+                                          FOR ls_item IN lt_item USING KEY entity
+                                          WHERE ( SalesOrder = <fs_head>-SalesOrder  )
+                                          NEXT lv_init = lv_init + ls_item-Value ).
+
+      ENDLOOP.
+
+      "Modify Total Amount field with discount value
+      MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+      ENTITY Header
+      UPDATE FIELDS ( TotalAmount Discount )
+      WITH VALUE #( FOR ls_head IN lt_head
+                  ( %tky        = ls_head-%tky
+                    TotalAmount = COND #( WHEN ls_head-TotalAmount NE 0
+                                         THEN ls_head-TotalAmount - ( ( ls_head-TotalAmount * keys[ KEY entity SalesOrder = ls_head-SalesOrder ]-%param-Discount ) / 100 )
+                                         ELSE 0 )
+                    Discount   = keys[ KEY entity SalesOrder = ls_head-SalesOrder ]-%param-Discount ) ).
+
+    ENDIF.
+
+    "Read all Order detail with modified value from buffer
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    ALL FIELDS WITH
+    CORRESPONDING #( lt_head )
+    RESULT DATA(lt_head_with_totalamt).
+    IF lt_head_with_totalamt[] IS NOT INITIAL.
+
+      "Update the Result table with updated value
+      result = VALUE #( FOR ls_head_totalamt IN lt_head_with_totalamt
+                      ( %tky = ls_head_totalamt-%tky
+                       %param = ls_head_totalamt ) ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD bookedOrder.
+
+    "Modify order status as Booked
+    MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    UPDATE FIELDS ( OrderStatus )
+    WITH VALUE #( FOR ls_key IN keys
+                ( %tky        = ls_key-%tky
+                  OrderStatus = gc_status-booked  ) ).
+
+    "Read all order detail with modified value from buffer
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(lt_order_status).
+
+    result = VALUE #( FOR ls_status IN lt_order_status
+                    ( %tky  = ls_status-%tky
+                     %param = ls_status ) ).
+
+  ENDMETHOD.
+
+  METHOD canceledOrder.
+
+    "Modify order status as Canceled
+    MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    UPDATE FIELDS ( OrderStatus )
+    WITH VALUE #( FOR ls_key IN keys
+                ( %tky        = ls_key-%tky
+                  OrderStatus = gc_status-canceled  ) ).
+
+    "Read all order detail with modified value from buffer
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(lt_order_status).
+
+    result = VALUE #( FOR ls_status IN lt_order_status
+                    ( %tky  = ls_status-%tky
+                     %param = ls_status ) ).
+
+  ENDMETHOD.
+
+  METHOD setOrderStatus.
+
+    "Read Sales order status detail
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    FIELDS ( OrderStatus )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_orderstatus).
+
+    "Set Sales Order Status as New while creating sales order
+    MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    UPDATE FIELDS ( OrderStatus )
+    WITH VALUE #( FOR ls_status IN lt_orderstatus
+                ( %tky = ls_status-%tky
+                  OrderStatus = gc_status-new ) ).
+
   ENDMETHOD.
 
 ENDCLASS.

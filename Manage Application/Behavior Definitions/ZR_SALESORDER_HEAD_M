@@ -15,9 +15,13 @@ early numbering
   create ( authorization : global );
   update;
   delete;
-  field ( readonly ) SalesOrder, Ernam, LastChangedAt, TotalAmount;
+  field ( readonly ) SalesOrder, Ernam, LastChangedAt, OrderStatus, TotalAmount, Discount;
 
   association _Item { create; with draft; }
+
+  action ( authorization : update ) bookedOrder result [1] $self;
+  action ( authorization : update ) canceledOrder result [1] $self;
+  action ( authorization : update ) deductDiscount parameter ZA_DISCOUNT_AMOUNT result [1] $self;
 
   //Validate Document Date
   validation validateDocumentDate on save { field DocumentDate; create; }
@@ -27,8 +31,16 @@ early numbering
   //Internal action is used when we modify item entity price then automatically calculate head total amount
   internal action reCalculateTotalAmt;
 
+  //Set defualt order status as "New"
+  determination setOrderStatus on modify { create; }
+
   //While Creation SO, Sales order creation date and time will capture By RAP Framework
   determination initDatetime on save { create; }
+
+  side effects
+  {
+    entity _Item affects field TotalAmount;  //This side effect use when we delete line item then refresh the header detail
+  }
 
   draft determine action Prepare
   {
@@ -78,10 +90,10 @@ etag dependent by _Head
   association _Head { with draft; }
 
   //Deter. Value = Per Item rate * Quantity
-  determination setTotalValue on modify { field Rate, Quantity; }
+  determination setTotalValue on modify { field Rate, Quantity; create; delete; }
 
   //Deter. TotalAmount = Sum of all Sales item Value
-  determination setTotalAmount on modify { field Rate, Quantity; create; }
+  determination setTotalAmount on modify { field Rate, Quantity; create; delete; }
 
   //side effect used refresh UI screen to get the latest value
   side effects
