@@ -30,6 +30,8 @@ CLASS lhc_Header DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR ACTION Header~canceledOrder RESULT result.
     METHODS setOrderStatus FOR DETERMINE ON MODIFY
       IMPORTING keys FOR Header~setOrderStatus.
+    METHODS copyData FOR MODIFY
+      IMPORTING keys FOR ACTION Header~copyData.
     METHODS earlynumbering_create FOR NUMBERING
       IMPORTING entities FOR CREATE Header.
 
@@ -118,7 +120,7 @@ CLASS lhc_Header IMPLEMENTATION.
     FROM CORRESPONDING #( entities )
     LINK DATA(lt_item).
 
-    LOOP AT entities ASSIGNING FIELD-SYMBOL(<fs_entities>) GROUP BY <fs_entities>-SalesOrder.
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<fs_entities>). "GROUP BY <fs_entities>-SalesOrder.
 
       DATA(lv_line) = COND #( WHEN lt_item IS INITIAL
                               THEN 0
@@ -424,6 +426,79 @@ CLASS lhc_Header IMPLEMENTATION.
     WITH VALUE #( FOR ls_status IN lt_orderstatus
                 ( %tky = ls_status-%tky
                   OrderStatus = gc_status-new ) ).
+
+  ENDMETHOD.
+
+  METHOD copyData.
+
+    DATA: lt_create_head TYPE TABLE FOR CREATE zr_salesorder_head_m,
+          lt_create_item TYPE TABLE FOR CREATE zr_salesorder_head_m\\Header\_Item.
+
+    "Read Sales order Header detail
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(lt_head).
+
+    "Read Sales order Item detail
+    READ ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header BY \_Item
+    ALL FIELDS WITH
+    CORRESPONDING #( keys )
+    RESULT DATA(lt_item).
+
+    LOOP AT lt_head ASSIGNING FIELD-SYMBOL(<fs_head>).
+
+      "Append Sales Order header details
+      APPEND VALUE #( %cid      = keys[ KEY entity %key = <fs_head>-%key ]-%cid
+                      %is_draft = <fs_head>-%is_draft                 "Application is draft enable then add this statement
+                      %data     = CORRESPONDING #( <fs_head>-%data EXCEPT SalesOrder ) ) TO lt_create_head ASSIGNING FIELD-SYMBOL(<fs_create_head>).
+      <fs_create_head>-DocumentDate = cl_abap_context_info=>get_system_date( ).
+
+      "Append Sales order Line item detail
+      LOOP AT lt_item ASSIGNING FIELD-SYMBOL(<fs_item>) USING KEY entity WHERE SalesOrder = <fs_head>-SalesOrder.
+        APPEND VALUE #( %cid_ref  = <fs_create_head>-%cid
+                        %is_draft = <fs_item>-%is_draft
+                        %target   = VALUE #( (  %cid  = |{ <fs_create_head>-%cid }{ <fs_item>-Item }|
+                                                %data = CORRESPONDING #( <fs_item> EXCEPT SalesOrder  ) ) ) )  TO lt_create_item.
+
+      ENDLOOP.
+
+    ENDLOOP.
+
+    "Create Sales Order Header and line item  BO Instance by Copy Button
+    MODIFY ENTITIES OF zr_salesorder_head_m IN LOCAL MODE
+    ENTITY Header
+    CREATE FIELDS ( DocumentDate
+                    OrderType
+                    SalesOrganization
+                    DistributionChannel
+                    Division
+                    SoldTo
+                    ShipTo
+                    OrderStatus
+                    TotalAmount
+                    Currency
+                    Discount )
+     WITH lt_create_head
+     CREATE BY \_Item
+     FIELDS ( Item
+              Material
+              MaterialDescription
+              CommentText
+              Quantity
+              Unit
+              Rate
+              Value
+              Currency )
+              WITH lt_create_item
+     MAPPED DATA(lt_mapped_head)
+     REPORTED DATA(lt_reported)
+     FAILED DATA(lt_failed).
+
+    mapped-header = lt_mapped_head-header.
+*    mapped-item = lt_mapped_head-item.
 
   ENDMETHOD.
 

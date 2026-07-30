@@ -20,12 +20,14 @@ annotate entity ZC_SALESORDER_HEAD_M with
   @UI: { lineItem: [{ position: 10, label: 'Sales Order Number' },
                     { type: #FOR_ACTION, dataAction: 'deductDiscount', label: 'Deduct Discount' },
                     { type: #FOR_ACTION, dataAction: 'bookedOrder', label: 'Booked Order' },
-                    { type: #FOR_ACTION, dataAction: 'canceledOrder', label: 'Canceled Order' }],
+                    { type: #FOR_ACTION, dataAction: 'canceledOrder', label: 'Canceled Order' },
+                    { type: #FOR_ACTION, dataAction: 'copyData', label: 'CopyData' } ],
          selectionField: [{ position: 10 }],
          identification: [{ position: 10, label: 'Sales Order Number' },
                           { type: #FOR_ACTION, dataAction: 'deductDiscount', label: 'Deduct Discount' },
                           { type: #FOR_ACTION, dataAction: 'bookedOrder', label: 'Booked Order' },
-                          { type: #FOR_ACTION, dataAction: 'canceledOrder', label: 'Canceled Order' }],
+                          { type: #FOR_ACTION, dataAction: 'canceledOrder', label: 'Canceled Order' },
+                          { type: #FOR_ACTION, dataAction: 'copyData', label: 'CopyData' }],
          fieldGroup: [{ qualifier: 'HeaderField' }] }
   @Search.defaultSearchElement: true
   @Search.fuzzinessThreshold: 0.8
