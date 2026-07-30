@@ -21,7 +21,9 @@ early numbering
 
   action ( authorization : update ) bookedOrder result [1] $self;
   action ( authorization : update ) canceledOrder result [1] $self;
-  action ( authorization : update ) deductDiscount parameter ZA_DISCOUNT_AMOUNT result [1] $self;
+  action ( authorization : update ) deductDiscount parameter ZA_DISCOUNT_AMOUNT result [1] $self;   //Non Factory Action
+
+  factory action copyData[1];  //Factory Action
 
   //Validate Document Date
   validation validateDocumentDate on save { field DocumentDate; create; }

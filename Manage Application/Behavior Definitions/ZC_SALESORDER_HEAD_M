@@ -14,6 +14,7 @@ use etag
   use action deductDiscount;
   use action bookedOrder;
   use action canceledOrder;
+  use action copyData;
 
   use action Edit;
   use action Activate;
